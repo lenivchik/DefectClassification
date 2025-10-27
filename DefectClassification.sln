@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36301.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DefectClassification.Core", "..\DefectClassification.Core\DefectClassification.Core.csproj", "{9A60AE15-C5E5-4466-81D9-367EAFC1D702}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test_Excel", "..\Test_Excel\Test_Excel.csproj", "{EADD4526-CE17-49FE-8C39-61FEC9246003}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9A60AE15-C5E5-4466-81D9-367EAFC1D702}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A60AE15-C5E5-4466-81D9-367EAFC1D702}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A60AE15-C5E5-4466-81D9-367EAFC1D702}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A60AE15-C5E5-4466-81D9-367EAFC1D702}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EADD4526-CE17-49FE-8C39-61FEC9246003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EADD4526-CE17-49FE-8C39-61FEC9246003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EADD4526-CE17-49FE-8C39-61FEC9246003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EADD4526-CE17-49FE-8C39-61FEC9246003}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E1ED8957-2F93-4549-BF22-2D1C77D905F4}
+	EndGlobalSection
+EndGlobal
