@@ -12,6 +12,11 @@ namespace DefectClassification.Core
     public enum DefectRegion
     {
         /// <summary>
+        ///  Нет деффектов.
+        /// </summary>
+        Clear,
+
+        /// <summary>
         /// Обширная коррозия (Extensive corrosion) - Длина/Ширина ≥ 3
         /// </summary>
         ExtСor,

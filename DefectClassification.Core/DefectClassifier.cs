@@ -9,6 +9,7 @@ namespace DefectClassification.Core
     {
         private const double MinMeasurement = 0.0;
         private const double MaxMeasurement = 10.0;
+        private const double MaxMetMeasurement = 40.0;
 
         /// <summary>
         /// Классификация на основе длины/ширины.
@@ -18,12 +19,15 @@ namespace DefectClassification.Core
         /// <param name="thickness"> Толщина стенки.</param>
 
         /// <returns>Определенние дефекта.</returns>
-        public DefectRegion Classify(double length, double width, double thickness)
+        public DefectRegion Classify(double length, double width, double MaxMet)
         {
             
             ValidateMeasurement(length, nameof(length));
             ValidateMeasurement(width, nameof(width));
-            ValidateMeasurement(thickness, nameof(thickness));
+            
+            // 0: Нет деффектов
+            if (MaxMet < MaxMetMeasurement)
+                return DefectRegion.Clear;
 
             // 1: Обширная Коррозия (Длина/Ширина ≥ 3)
             if (length >=3.0 && width >= 3.0)
@@ -101,6 +105,7 @@ namespace DefectClassification.Core
         /// </summary>
         public static string GetRegionDescription(DefectRegion region) => region switch
         {
+            DefectRegion.Clear => "Нет деффектов",
             DefectRegion.ExtСor => "Обширная коррозия",
             DefectRegion.PointСor=> "Точечная коррозия",
             DefectRegion.LongSlit => "Продольный шлиц",
