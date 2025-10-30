@@ -25,9 +25,6 @@ namespace DefectClassification.Core
             ValidateMeasurement(length, nameof(length));
             ValidateMeasurement(width, nameof(width));
             
-            // 0: Нет деффектов
-            if (MaxMet < MaxMetMeasurement)
-                return DefectRegion.Clear;
 
             // 1: Обширная Коррозия (Длина/Ширина ≥ 3)
             if (length >=3.0 && width >= 3.0)

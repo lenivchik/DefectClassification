@@ -13,7 +13,7 @@
 //            Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 //            // Set EPPlus license context
-//                       ExcelPackage.License.SetNonCommercialPersonal("Amir");
+//            ExcelPackage.License.SetNonCommercialPersonal("Amir");
 
 //            Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
 //            Console.WriteLine("║  Обработка данных по трубкам                             ║");
@@ -75,8 +75,9 @@
 //                    int totalErrors = 0;
 //                    int sheetsProcessed = 0;
 
-//                    // Dictionary to store defects found for each tube
-//                    var tubeDefects = new Dictionary<int, HashSet<string>>();
+//                    // Dictionary to store defects with depths and max loss for each tube
+//                    // Structure: tubeNumber -> defectType -> List of (depth, maxLoss)
+//                    var tubeDefects = new Dictionary<int, Dictionary<string, List<(double depth, double maxLoss)>>>();
 
 //                    Console.WriteLine($"\n📊 Найдено листов: {package.Workbook.Worksheets.Count}");
 
@@ -99,9 +100,9 @@
 //                            continue;
 //                        }
 
-//                        Console.WriteLine($"\n{'=' * 60}");
+//                        Console.WriteLine(new string('═', 60));
 //                        Console.WriteLine($"🔧 Обработка: {sheetName} (Трубка #{tubeNumber})");
-//                        Console.WriteLine($"{'=' * 60}");
+//                        Console.WriteLine(new string('═', 60));
 
 //                        // Find column headers
 //                        var config = FindTubeColumns(worksheet);
@@ -114,7 +115,9 @@
 //                        Console.WriteLine($"✓ Найдены столбцы:");
 //                        Console.WriteLine($"  - Длина: колонка {config.LengthColumn} (строка {config.HeaderRow})");
 //                        Console.WriteLine($"  - Площадь: колонка {config.AreaColumn} (строка {config.HeaderRow})");
-//                        Console.WriteLine($"  - Примечание: колонка {config.TextColumn} (строка {config.HeaderRow})");
+//                        Console.WriteLine($"  - Глубина: колонка {config.DepthColumn} (строка {config.HeaderRow})");
+//                        Console.WriteLine($"  - Примеч: колонка {config.TextColumn} (строка {config.HeaderRow})");
+//                        Console.WriteLine($"  - Потеря: колонка {config.MaxMetLoss} (строка {config.HeaderRow})");
 
 //                        // Process data rows
 //                        int startRow = config.HeaderRow + 1;
@@ -122,25 +125,35 @@
 //                        int sheetProcessed = 0;
 //                        int sheetErrors = 0;
 
-//                        // Initialize defect set for this tube
+//                        // Initialize defect dictionary for this tube
 //                        if (!tubeDefects.ContainsKey(tubeNumber))
 //                        {
-//                            tubeDefects[tubeNumber] = new HashSet<string>();
+//                            tubeDefects[tubeNumber] = new Dictionary<string, List<(double depth, double maxLoss)>>();
 //                        }
 
 //                        for (int row = startRow; row <= rowCount; row++)
 //                        {
+//                            var depthCell = worksheet.Cells[row, config.DepthColumn];
 //                            var lengthCell = worksheet.Cells[row, config.LengthColumn];
 //                            var areaCell = worksheet.Cells[row, config.AreaColumn];
 //                            var descCell = worksheet.Cells[row, config.TextColumn];
+//                            var maxMetCell = worksheet.Cells[row, config.MaxMetLoss];
 
 //                            try
 //                            {
 //                                // Skip empty rows
 //                                if (string.IsNullOrWhiteSpace(lengthCell.Text) &&
-//                                    string.IsNullOrWhiteSpace(areaCell.Text))
+//                                    string.IsNullOrWhiteSpace(areaCell.Text) &&
+//                                    string.IsNullOrWhiteSpace(descCell.Text) &&
+//                                    string.IsNullOrWhiteSpace(maxMetCell.Text))
 //                                {
 //                                    continue;
+//                                }
+
+//                                // Parse depth (in meters)
+//                                if (!double.TryParse(depthCell.Text, out double depthM))
+//                                {
+//                                    depthM = 0; // Default if depth is not available
 //                                }
 
 //                                // Parse length (in mm)
@@ -159,24 +172,36 @@
 //                                    continue;
 //                                }
 
+//                                if (!double.TryParse(maxMetCell.Text, out double maxLoss) || maxLoss < 0 || maxLoss > 100)
+//                                {
+//                                    descCell.Value = "ОШИБКА - Неверная потеря";
+//                                    sheetErrors++;
+//                                    continue;
+//                                }
+
 //                                // Calculate width: Area / Length
 //                                double widthMm = areaSqMm / lengthMm;
 
-//                                // Convert to Lambda units (assuming 1 Lambda = 1mm for now)
-//                                double lengthLambda = lengthMm;
-//                                double widthLambda = widthMm;
+//                                // Convert to Lambda units (1 Lambda = 10mm)
+//                                double lengthLambda = lengthMm / 10;
+//                                double widthLambda = widthMm / 10;
 
 //                                // Classify defect
-//                                var region = classifier.Classify(lengthLambda, widthLambda, );
+//                                var region = classifier.Classify(lengthLambda, widthLambda, maxLoss);
 //                                var description = DefectClassifier.GetRegionDescription(region);
 
 //                                // Write results
 //                                descCell.Value = description;
 
-//                                // Add to defect set (skip "Нет деффектов")
-//                                if (!description.ToLower().Contains("ошибка"))
+//                                // Add to defect dictionary (skip "Нет деффектов" and errors)
+//                                if (!description.ToLower().Contains("нет деффектов") &&
+//                                    !description.ToLower().Contains("ошибка"))
 //                                {
-//                                    tubeDefects[tubeNumber].Add(description);
+//                                    if (!tubeDefects[tubeNumber].ContainsKey(description))
+//                                    {
+//                                        tubeDefects[tubeNumber][description] = new List<(double depth, double maxLoss)>();
+//                                    }
+//                                    tubeDefects[tubeNumber][description].Add((depthM, maxLoss));
 //                                }
 
 //                                sheetProcessed++;
@@ -200,7 +225,19 @@
 //                        // Show found defects for this tube
 //                        if (tubeDefects[tubeNumber].Any())
 //                        {
-//                            Console.WriteLine($"  🔍 Найденные дефекты: {string.Join(", ", tubeDefects[tubeNumber])}");
+//                            var defectList = new List<(string defect, double depth, double maxLoss)>();
+//                            foreach (var kvp in tubeDefects[tubeNumber])
+//                            {
+//                                foreach (var item in kvp.Value)
+//                                {
+//                                    defectList.Add((kvp.Key, item.depth, item.maxLoss));
+//                                }
+//                            }
+//                            // Sort by depth (ascending)
+//                            var sortedDefects = defectList.OrderBy(d => d.depth)
+//                                .Select(d => $"\"{d.defect}\" ({d.depth:F3}м, {d.maxLoss:F0}%)")
+//                                .ToList();
+//                            Console.WriteLine($"  🔍 Найденные дефекты: {string.Join(", ", sortedDefects)}");
 //                        }
 //                        else
 //                        {
@@ -210,6 +247,9 @@
 //                        totalProcessed += sheetProcessed;
 //                        totalErrors += sheetErrors;
 //                        sheetsProcessed++;
+
+//                        // Auto-fit columns
+//                        worksheet.Column(config.TextColumn).AutoFit();
 //                    }
 
 //                    // Update ИНТЕРВАЛЫ sheet
@@ -218,9 +258,9 @@
 //                    // Save the file
 //                    package.Save();
 
-//                    Console.WriteLine($"\n{'=' * 60}");
+//                    Console.WriteLine($"\n{new string('═', 60)}");
 //                    Console.WriteLine("✅ ОБРАБОТКА ЗАВЕРШЕНА!");
-//                    Console.WriteLine($"{'=' * 60}");
+//                    Console.WriteLine(new string('═', 60));
 //                    Console.WriteLine($"  Обработано листов: {sheetsProcessed}");
 //                    Console.WriteLine($"  Всего строк: {totalProcessed}");
 //                    if (totalErrors > 0)
@@ -257,7 +297,7 @@
 //            return -1;
 //        }
 
-//        static void UpdateIntervalsSheet(ExcelPackage package, Dictionary<int, HashSet<string>> tubeDefects)
+//        static void UpdateIntervalsSheet(ExcelPackage package, Dictionary<int, Dictionary<string, List<(double depth, double maxLoss)>>> tubeDefects)
 //        {
 //            // Find the ИНТЕРВАЛЫ sheet (case-insensitive)
 //            var intervalsSheet = package.Workbook.Worksheets
@@ -269,9 +309,9 @@
 //                return;
 //            }
 
-//            Console.WriteLine($"\n{'=' * 60}");
+//            Console.WriteLine($"\n{new string('═', 60)}");
 //            Console.WriteLine($"📝 Обновление листа: {intervalsSheet.Name}");
-//            Console.WriteLine($"{'=' * 60}");
+//            Console.WriteLine(new string('═', 60));
 
 //            // Find the columns for tube number and notes
 //            int tubeNumCol = -1;
@@ -285,12 +325,12 @@
 //                {
 //                    var cellText = intervalsSheet.Cells[row, col].Text?.Trim().ToLower() ?? "";
 
-//                    if (cellText.Contains("трубки") && cellText.Contains("№"))
+//                    if ((cellText.Contains("трубки") && cellText.Contains("трубк")))
 //                    {
 //                        tubeNumCol = col;
 //                        headerRow = row;
 //                    }
-//                    else if (cellText.Contains("примечание"))
+//                    else if (cellText.Contains("примечание") || cellText.Contains("примеч"))
 //                    {
 //                        notesCol = col;
 //                        if (headerRow == 0)
@@ -328,7 +368,21 @@
 //                {
 //                    if (tubeDefects.ContainsKey(tubeNumber) && tubeDefects[tubeNumber].Any())
 //                    {
-//                        var defectsList = string.Join(", ", tubeDefects[tubeNumber].OrderBy(d => d));
+//                        // Format: "DefectType" (depthм, maxLoss%), sorted by depth
+//                        var defectList = new List<(string defect, double depth, double maxLoss)>();
+//                        foreach (var kvp in tubeDefects[tubeNumber])
+//                        {
+//                            foreach (var item in kvp.Value)
+//                            {
+//                                defectList.Add((kvp.Key, item.depth, item.maxLoss));
+//                            }
+//                        }
+//                        // Sort by depth (ascending)
+//                        var sortedDefects = defectList.OrderBy(d => d.depth)
+//                            .Select(d => $"\"{d.defect}\" ({d.depth:F3}м, {d.maxLoss:F0}%)")
+//                            .ToList();
+//                        var defectsList = string.Join(", ", sortedDefects);
+
 //                        intervalsSheet.Cells[row, notesCol].Value = defectsList;
 //                        updatedCount++;
 //                        Console.WriteLine($"  ✓ Трубка {tubeNumber}: {defectsList}");
@@ -350,7 +404,13 @@
 //                {
 //                    var cellText = worksheet.Cells[row, col].Text?.Trim().ToLower() ?? "";
 
-//                    if (cellText.Contains("длина"))
+//                    if (cellText.Contains("глубина"))
+//                    {
+//                        config.DepthColumn = col;
+//                        if (config.HeaderRow == 0)
+//                            config.HeaderRow = row;
+//                    }
+//                    else if (cellText.Contains("длина"))
 //                    {
 //                        config.LengthColumn = col;
 //                        config.HeaderRow = row;
@@ -367,16 +427,51 @@
 //                        if (config.HeaderRow == 0)
 //                            config.HeaderRow = row;
 //                    }
+//                    else if (cellText.Contains("потеря"))
+//                    {
+//                        config.MaxMetLoss = col;
+//                        if (config.HeaderRow == 0)
+//                            config.HeaderRow = row;
+//                    }
 //                }
 //            }
 
 //            return config;
 //        }
 
+//        static void ApplyColorCoding(ExcelRange cell, DefectRegion region)
+//        {
+//            switch (region)
+//            {
+//                case DefectRegion.ExtСor:
+//                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+//                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(255, 200, 200));
+//                    break;
+//                case DefectRegion.PointСor:
+//                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+//                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(200, 255, 200));
+//                    break;
+//                case DefectRegion.LongSlit:
+//                case DefectRegion.TranSlit:
+//                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+//                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(255, 255, 200));
+//                    break;
+//                case DefectRegion.LongGroov:
+//                case DefectRegion.TranGroov:
+//                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+//                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(200, 220, 255));
+//                    break;
+//                case DefectRegion.Ulcer:
+//                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+//                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(255, 220, 255));
+//                    break;
+//            }
+//        }
+
 //        static void ShowSheetStatistics(ExcelWorksheet worksheet, TubeColumnConfiguration config,
 //                                       int totalRows, int typeCol)
 //        {
-//            var statistics = new Dictionary<string, int>();
+//            var statistics = new System.Collections.Generic.Dictionary<string, int>();
 //            int startRow = config.HeaderRow + 1;
 
 //            for (int row = startRow; row <= worksheet.Dimension?.Rows; row++)
@@ -421,6 +516,8 @@
 //    {
 //        public int LengthColumn { get; set; }
 //        public int AreaColumn { get; set; }
+//        public int DepthColumn { get; set; }
+//        public int MaxMetLoss { get; set; }
 //        public int TextColumn { get; set; }
 //        public int HeaderRow { get; set; }
 
