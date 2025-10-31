@@ -1,20 +1,207 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DefectClassification.GUI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         x:Class="DefectClassification.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="DefectClassification.GUI">
+        Title="Классификация Дефектов"
+        Width="600" Height="500"
+        CanResize="False">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
+        <!-- File Selection Section -->
+        <Border Grid.Row="0" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="1" 
+                CornerRadius="5" 
+                Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Выбор файла " 
+                           FontWeight="Bold" 
+                           FontSize="14"/>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Grid.Column="0" 
+                             Text="{Binding FilePath}" 
+                             IsReadOnly="True" 
+                             Watermark="Путь к Excel файлу..."/>
+
+                    <Button Grid.Column="2" 
+                            Content="Обзор..." 
+                            Command="{Binding SelectFileCommand}" 
+                            Width="100"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Mode Selection Section -->
+        <Border Grid.Row="2" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="1" 
+                CornerRadius="5" 
+                Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Режим работы" 
+                           FontWeight="Bold" 
+                           FontSize="14"/>
+
+                <RadioButton Grid.Row="2" 
+                             Content="Статический (единая толщина стенки колонны)" 
+                             IsChecked="{Binding IsStaticMode}"/>
+
+                <RadioButton Grid.Row="4" 
+                             Content="Динамический (толщина стенки колонны для каждой трубки)" 
+                             IsChecked="{Binding IsDynamicMode}"/>
+            </Grid>
+        </Border>
+
+        <!-- Lambda Value Section -->
+        <Border Grid.Row="4" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="1" 
+                CornerRadius="5" 
+                Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Толщина стенки (мм)" 
+                           FontWeight="Bold" 
+                           FontSize="14"/>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                    <NumericUpDown Value="{Binding LambdaValue}" 
+                                   Minimum="0" 
+                                   Increment="1"
+                                   FormatString="F1"
+                                   Width="150"
+                                   IsEnabled="{Binding IsStaticMode}"/>
+                    <TextBlock Text="мм" 
+                               VerticalAlignment="Center" 
+                               Margin="5,0,0,0"/>
+                    <TextBlock Text="(только для статического режима)" 
+                               VerticalAlignment="Center" 
+                               Margin="10,0,0,0" 
+                               Foreground="Gray" 
+                               FontStyle="Italic"
+                               IsVisible="{Binding !IsStaticMode}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Options Section -->
+        <Border Grid.Row="6" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="1" 
+                CornerRadius="5" 
+                Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Настройки" 
+                           FontWeight="Bold" 
+                           FontSize="14"/>
+
+                <CheckBox Grid.Row="2" 
+                          Content="Создать резервную копию перед обработкой" 
+                          IsChecked="{Binding CreateBackup}"/>
+            </Grid>
+        </Border>
+
+        <!-- Process Button -->
+        <Button Grid.Row="8" 
+                Content="Обработать файл" 
+                Command="{Binding ProcessFileCommand}"
+                IsEnabled="{Binding CanProcess}"
+                HorizontalAlignment="Stretch"
+                Height="40"
+                FontSize="14"
+                FontWeight="Bold"/>
+
+        <!-- Progress Section -->
+        <Border Grid.Row="10" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="1" 
+                CornerRadius="5" 
+                Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Прогресс" 
+                           FontWeight="Bold" 
+                           FontSize="14"/>
+
+                <ProgressBar Grid.Row="2" 
+                             Value="{Binding ProgressValue}" 
+                             Minimum="0" 
+                             Maximum="100" 
+                             Height="25"
+                             IsVisible="{Binding IsProcessing}"/>
+
+                <TextBlock Grid.Row="4" 
+                           Text="{Binding StatusMessage}" 
+                           TextWrapping="Wrap"
+                           FontSize="12"/> 
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
