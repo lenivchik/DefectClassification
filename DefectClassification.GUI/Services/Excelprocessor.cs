@@ -2,7 +2,6 @@
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 
@@ -112,7 +111,7 @@ namespace DefectClassification.GUI.Services
                             }
 
                             // Apply threshold filter (only in static mode)
-                            if (isStaticMode && maxLoss < lambdaThreshold)
+                            if (isStaticMode && maxLoss < 40)
                             {
                                 continue;
                             }
@@ -141,8 +140,8 @@ namespace DefectClassification.GUI.Services
                             double widthMm = areaSqMm / lengthMm;
 
                             // Convert to Lambda units (1 Lambda = 10mm)
-                            double lengthLambda = lengthMm / 10;
-                            double widthLambda = widthMm / 10;
+                            double lengthLambda = lengthMm / lambdaThreshold;
+                            double widthLambda = widthMm / lambdaThreshold;
 
                             // Classify defect
                             var region = classifier.Classify(lengthLambda, widthLambda);

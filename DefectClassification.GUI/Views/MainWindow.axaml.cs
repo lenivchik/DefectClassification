@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 
 namespace DefectClassification.GUI.Views
 {
@@ -7,6 +7,10 @@ namespace DefectClassification.GUI.Views
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void Grid_ActualThemeVariantChanged(object? sender, System.EventArgs e)
+        {
         }
     }
 }
