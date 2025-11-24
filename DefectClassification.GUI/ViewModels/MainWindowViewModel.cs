@@ -336,6 +336,7 @@ namespace DefectClassification.GUI.ViewModels
         [RelayCommand]
         private void OpenFile()
         {
+            SetStatusMessage("ℹ Открытие файла...", MessageType.Info);
             if (string.IsNullOrWhiteSpace(OutputFilePath) || !File.Exists(OutputFilePath))
             {
                 SetStatusMessage("❌ Файл не найден. Выполните обработку сначала.", MessageType.Error);
