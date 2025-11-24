@@ -9,7 +9,6 @@ namespace DefectClassification.Core
     {
         private const double MinMeasurement = 0.0;
         private const double MaxMeasurement = 10.0;
-        private const double MaxMetMeasurement = 40.0;
 
         /// <summary>
         /// Классификация на основе длины/ширины.
@@ -88,7 +87,7 @@ namespace DefectClassification.Core
         }
         private void ValidateMeasurement(double value, string parameterName)
         {
-            if (value < MinMeasurement)
+            if (value <= MinMeasurement)
                 throw new InvalidDefectMeasurementException(parameterName, value);
 
             if (double.IsNaN(value) || double.IsInfinity(value))

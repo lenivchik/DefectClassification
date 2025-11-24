@@ -1,9 +1,9 @@
-﻿using DefectClassification.Core;
-using OfficeOpenXml;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DefectClassification.Core;
+using OfficeOpenXml;
 
 namespace DefectClassification.GUI.Services
 {
@@ -14,11 +14,11 @@ namespace DefectClassification.GUI.Services
             double lambdaThreshold,
             bool isStaticMode,
             bool createBackup,
+            Dictionary<int, double>? tubeThicknesses = null,
             IProgress<(int current, int total, string message)>? progress = null)
         {
             // Set EPPlus license
             ExcelPackage.License.SetNonCommercialPersonal("Amir");
-
 
             // Validate file
             if (!File.Exists(filePath))
@@ -60,8 +60,31 @@ namespace DefectClassification.GUI.Services
                         continue;
                     }
 
+                    // Get wall thickness for this tube
+                    double wallThickness;
+                    if (isStaticMode)
+                    {
+                        // Use static lambda threshold
+                        wallThickness = lambdaThreshold;
+                    }
+                    else
+                    {
+                        // Try to get from dynamic configuration
+                        if (tubeThicknesses != null && tubeThicknesses.ContainsKey(tubeNumber))
+                        {
+                            wallThickness = tubeThicknesses[tubeNumber];
+                        }
+                        else
+                        {
+                            progress?.Report((processedSheets, totalSheets,
+                                $"⚠️ Трубка #{tubeNumber} не найдена в конфигурации - пропуск"));
+                            processedSheets++;
+                            continue;
+                        }
+                    }
+
                     progress?.Report((processedSheets, totalSheets,
-                        $"Обработка: {sheetName} (Трубка #{tubeNumber})"));
+                        $"Обработка: {sheetName} (Трубка #{tubeNumber}, толщина {wallThickness} мм)"));
 
                     // Find columns
                     var config = FindTubeColumns(worksheet);
@@ -110,8 +133,7 @@ namespace DefectClassification.GUI.Services
                                 continue;
                             }
 
-                            // Apply threshold filter (only in static mode)
-                            if (isStaticMode && maxLoss < 40)
+                            if (maxLoss < 40)
                             {
                                 continue;
                             }
@@ -139,9 +161,10 @@ namespace DefectClassification.GUI.Services
                             // Calculate width: Area / Length
                             double widthMm = areaSqMm / lengthMm;
 
-                            // Convert to Lambda units (1 Lambda = 10mm)
-                            double lengthLambda = lengthMm / lambdaThreshold;
-                            double widthLambda = widthMm / lambdaThreshold;
+                            // Convert to Lambda units using wall thickness
+                            // Lambda = measurement / wall_thickness
+                            double lengthLambda = lengthMm / wallThickness;
+                            double widthLambda = widthMm / wallThickness;
 
                             // Classify defect
                             var region = classifier.Classify(lengthLambda, widthLambda);
