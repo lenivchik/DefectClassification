@@ -18,15 +18,15 @@
         <Grid Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
@@ -96,7 +96,6 @@
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
@@ -109,13 +108,12 @@
                                     BorderBrush="#D0D0D0" 
                                     BorderThickness="1" 
                                     CornerRadius="5" 
-                                    Padding="15"
+                                    Padding="8"
                                     Margin="25,0,0,0"
                                     IsVisible="{Binding IsStaticMode}">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="10"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
@@ -149,9 +147,6 @@
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="10"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <RadioButton Content="Динамический (толщина стенки колонны для каждой трубки)" 
@@ -240,7 +235,7 @@
                               GridLinesVisibility="All"
                               BorderThickness="1"
                               BorderBrush="#D0D0D0"
-                              Height="250"
+                              Height="150"
                               IsReadOnly="False">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="№ Трубки" 
@@ -285,11 +280,10 @@
                     BorderBrush="#E0E0E0" 
                     BorderThickness="1" 
                     CornerRadius="5" 
-                    Padding="15">
+                    Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="10"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -308,7 +302,7 @@
 
 
             <!-- Progress Section with Color-Coded Status -->
-            <Border Grid.Row="8" 
+<Border Grid.Row="8" 
                     BorderBrush="#E0E0E0" 
                     BorderThickness="1" 
                     CornerRadius="5" 
@@ -319,14 +313,43 @@
                         <RowDefinition Height="10"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="10"/>
+                        <RowDefinition Height="75"/>
+                        <RowDefinition Height="10"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" 
-                               Text="Прогресс" 
-                               FontWeight="Bold" 
-                               FontSize="14"/>
+                    <!-- Header with Clear/Export buttons -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
+                        <TextBlock Grid.Column="0"
+                                   Text="Журнал событий" 
+                                   FontWeight="Bold" 
+                                   FontSize="14"
+                                   VerticalAlignment="Center"/>
+
+                        <Button Grid.Column="2"
+                                Content="🗑️ Очистить"
+                                Command="{Binding ClearLogsCommand}"
+                                IsEnabled="{Binding HasLogs}"
+                                Width="100"
+                                Height="30"/>
+
+                        <Button Grid.Column="4"
+                                Content="💾 Экспорт"
+                                Command="{Binding ExportLogsCommand}"
+                                IsEnabled="{Binding HasLogs}"
+                                Width="100"
+                                Height="30"/>
+                    </Grid>
+
+                    <!-- Progress Bar -->
                     <ProgressBar Grid.Row="2" 
                                  Value="{Binding ProgressValue}" 
                                  Minimum="0" 
@@ -334,12 +357,63 @@
                                  Height="25"
                                  IsVisible="{Binding IsProcessing}"/>
 
-                    <!-- Color-Coded Status Message -->
-                    <TextBlock Grid.Row="4" 
-                               Text="{Binding StatusMessage}" 
-                               Foreground="{Binding StatusMessageBrush}"
-                               TextWrapping="Wrap"
-                               FontSize="13"/> 
+                    <!-- Scrollable Log History -->
+                    <ScrollViewer Grid.Row="4"
+                                  Name="LogScrollViewer"
+                                  VerticalScrollBarVisibility="Auto"
+                                  BorderThickness="1"
+                                  BorderBrush="#D0D0D0"
+                                  Background="#F9F9F9"
+                                  AllowAutoHide="True">
+                        <ItemsControl ItemsSource="{Binding LogEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="8,4"
+                                            BorderThickness="0,0,0,1"
+                                            BorderBrush="#E0E0E0"
+                                            Background="Transparent">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Timestamp -->
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding TimeStamp}"
+                                                       Foreground="#808080"
+                                                       FontFamily="Consolas,Courier New,monospace"
+                                                       FontSize="11"
+                                                       VerticalAlignment="Top"/>
+
+                                            <!-- Message -->
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Message}"
+                                                       Foreground="{Binding Color}"
+                                                       TextWrapping="Wrap"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Top"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Current Status (Last Message Highlighted) -->
+                    <Border Grid.Row="6"
+                            Background="#F0F0F0"
+                            BorderThickness="1"
+                            BorderBrush="#D0D0D0"
+                            CornerRadius="3"
+                            Padding="10">
+                        <TextBlock Text="{Binding StatusMessage}" 
+                                   Foreground="{Binding StatusMessageBrush}"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/> 
+                    </Border>
                 </Grid>
             </Border>
                         <Grid Grid.Row="10">
@@ -363,6 +437,8 @@
                     />
 
             </Grid>
+
+          
 
 
         </Grid>
