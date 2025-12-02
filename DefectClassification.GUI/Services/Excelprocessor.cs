@@ -38,7 +38,7 @@ namespace DefectClassification.GUI.Services
             using (var package = new ExcelPackage(new FileInfo(filePath)))
             {
                 var classifier = new DefectClassifier();
-                var tubeDefects = new Dictionary<int, Dictionary<string, List<(double depth, double maxLoss)>>>();
+                var tubeDefects = new Dictionary<int, Dictionary<string, List<(double depth, double maxLoss, double lengthMm)>>>();
 
                 // Count tube sheets
                 var tubeSheets = package.Workbook.Worksheets
@@ -99,7 +99,7 @@ namespace DefectClassification.GUI.Services
                     // Initialize defect dictionary for this tube
                     if (!tubeDefects.ContainsKey(tubeNumber))
                     {
-                        tubeDefects[tubeNumber] = new Dictionary<string, List<(double depth, double maxLoss)>>();
+                        tubeDefects[tubeNumber] = new Dictionary<string, List<(double depth, double maxLoss, double lengthMm)>>();
                     }
 
                     // Process rows
@@ -179,9 +179,9 @@ namespace DefectClassification.GUI.Services
                             {
                                 if (!tubeDefects[tubeNumber].ContainsKey(description))
                                 {
-                                    tubeDefects[tubeNumber][description] = new List<(double depth, double maxLoss)>();
+                                    tubeDefects[tubeNumber][description] = new List<(double depth, double maxLoss, double lengthMm)>();
                                 }
-                                tubeDefects[tubeNumber][description].Add((depthM, maxLoss));
+                                tubeDefects[tubeNumber][description].Add((depthM, maxLoss, lengthMm));
                             }
                         }
                         catch (Exception ex)
@@ -223,7 +223,7 @@ namespace DefectClassification.GUI.Services
 
         private void UpdateIntervalsSheet(
             ExcelPackage package,
-            Dictionary<int, Dictionary<string, List<(double depth, double maxLoss)>>> tubeDefects)
+            Dictionary<int, Dictionary<string, List<(double depth, double maxLoss, double lengthMm)>>> tubeDefects)
         {
             var intervalsSheet = package.Workbook.Worksheets
                 .FirstOrDefault(ws => ws.Name.ToUpper().Contains("ИНТЕРВАЛ"));
@@ -274,19 +274,45 @@ namespace DefectClassification.GUI.Services
                 {
                     if (tubeDefects.ContainsKey(tubeNumber) && tubeDefects[tubeNumber].Any())
                     {
-                        var defectList = new List<(string defect, double depth, double maxLoss)>();
+                        var defectList = new List<(string defect, double depth, double maxLoss, double lengthMm)>();
                         foreach (var kvp in tubeDefects[tubeNumber])
                         {
                             foreach (var item in kvp.Value)
                             {
-                                defectList.Add((kvp.Key, item.depth, item.maxLoss));
+                                defectList.Add((kvp.Key, item.depth, item.maxLoss, item.lengthMm));
                             }
                         }
 
                         var sortedDefects = defectList.OrderBy(d => d.depth)
-                            .Select(d => $"\"{d.defect}\" (макс потеря {d.maxLoss}%, на глубине {d.depth})")
+                            .Select(d =>
+                            {
+                                // Determine loss range
+                                string lossRange;
+                                if (d.maxLoss >= 80)
+                                    lossRange = "от 80% до 100% потери толщины металла";
+                                else if (d.maxLoss >= 60)
+                                    lossRange = "от 60% до 79% потери толщины металла";
+                                else
+                                    lossRange = "от 40% до 59% потери толщины металла";
+
+                                // Determine depth format based on length
+                                string depthFormat;
+                                if (d.lengthMm > 100)
+                                {
+                                    // Calculate interval: depth to depth + (length in meters)
+                                    double lengthM = d.lengthMm / 1000.0; // Convert mm to m
+                                    double endDepth = d.depth + lengthM;
+                                    depthFormat = $"в интервале {d.depth:F2} - {endDepth:F2} м.";
+                                }
+                                else
+                                {
+                                    depthFormat = $"на глубине {d.depth:F2} м.";
+                                }
+
+                                return $"\"{d.defect}\" ({lossRange}, {depthFormat})";
+                            })
                             .ToList();
-                        var defectsList = string.Join(", ", sortedDefects);
+                        var defectsList = string.Join(",\n", sortedDefects);
 
                         intervalsSheet.Cells[row, notesCol].Value = defectsList;
                     }

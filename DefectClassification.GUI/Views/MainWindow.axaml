@@ -3,6 +3,8 @@
         xmlns:vm="using:DefectClassification.GUI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+          xmlns:model="using:AvaloniaControls.Models"
+
         x:Class="DefectClassification.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/ntu.ico"
@@ -244,10 +246,34 @@
                                                 Binding="{Binding TubeNumber}" 
                                                 Width="*"
                                                 IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Толщина стенки (мм)" 
-                                                Binding="{Binding WallThickness}" 
-                                                Width="2*"
-                                                IsReadOnly="False"/>
+    <DataGridTemplateColumn Header="Толщина стенки (мм)" 
+                                                    Width="*"
+                                                    SortMemberPath="WallThickness">
+                                <!-- Display Template (Read-Only View) -->
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding WallThickness}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="10,0,20,0"
+                                                  />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <!-- Editing Template (NumericUpDown) -->
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <NumericUpDown Value="{Binding WallThickness, Mode=TwoWay}"
+                                                       Minimum="0.1"
+                                                       Maximum="1000"
+                                                       Increment="0.5"
+                                                       FormatString="F1"
+                                                   VerticalAlignment="Center"
+                                                       BorderThickness="0"
+                                                       Margin="10,0,20,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                       
+
                         </DataGrid.Columns>
                     </DataGrid>
 
