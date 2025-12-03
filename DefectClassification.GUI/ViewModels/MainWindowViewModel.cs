@@ -38,10 +38,10 @@ namespace DefectClassification.GUI.ViewModels
         private double _progressValue = 0;
 
         [ObservableProperty]
-        private string _statusMessage = "Готов к работе";
+        private string _statusMessage = string.Empty;
 
         [ObservableProperty]
-        private IBrush _statusMessageBrush = Brushes.Black;
+        private IBrush _statusMessageBrush;
 
 
         [ObservableProperty]
@@ -93,7 +93,7 @@ namespace DefectClassification.GUI.ViewModels
         {
             // Initialize with some default tube configurations
             InitializeDefaultTubes();
-            AddLog("Приложение запущено", LogLevel.Info);
+            SetStatusMessage("Приложение запущено", MessageType.Info);
 
         }
 
@@ -111,7 +111,7 @@ namespace DefectClassification.GUI.ViewModels
         {
             LogEntries.Clear();
             HasLogs = false;
-            AddLog("Журнал очищен", LogLevel.Info);
+            SetStatusMessage("Журнал очищен", MessageType.Info);
         }
         [RelayCommand]
         private async Task ExportLogs()
@@ -401,7 +401,12 @@ namespace DefectClassification.GUI.ViewModels
             }
             catch (InvalidOperationException ex)
             {
-                SetStatusMessage($"❌ Ошибка операции: {ex.Message}", MessageType.Error);
+                if (ex.ToString().Contains("being used by another process"))
+                {
+                    SetStatusMessage($"❌ Файл открыт в другой программе. Закройте Excel и попробуйте снова.", MessageType.Error);
+                }
+                else
+                    SetStatusMessage($"❌ Ошибка операции: {ex.Message}", MessageType.Error);
                 ProgressValue = 0;
             }
             catch (Exception ex)
